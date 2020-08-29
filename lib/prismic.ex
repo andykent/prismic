@@ -1,0 +1,2 @@
+defmodule Prismic do
+end
