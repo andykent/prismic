@@ -90,6 +90,8 @@ defmodule Prismic.Repo do
       def image(image_data), do: Prismic.Image.build(image_data)
 
       def rich_text(text_data), do: Prismic.RichText.build(text_data)
+
+      def slices(data), do: Prismic.Slice.build(data)
     end
   end
 end
