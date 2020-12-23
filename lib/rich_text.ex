@@ -1,10 +1,5 @@
-# %{"spans" => [%{"end" => 13, "start" => 0, "type" => "strong"}, %{"end" => 183, "start" => 157, "type" => "strong"}], "text" => "Sundeep Saini is a London Based Choreographer and movement director. Sundeep Saini is a London Based Choreographer and movement director. Sundeep Saini is a London Based Choreographer and movement director. Sundeep Saini is a London Based Choreographer and movement director.", "type" => "paragraph"}
-defmodule Prismic.RichText.Block do
-  defstruct text: "", type: "paragraph", spans: []
-end
-
 defmodule Prismic.RichText do
-  alias Prismic.RichText.Block
+  alias Prismic.RichText.{Block, HTMLFormatter, PlainTextFormatter}
 
   defstruct blocks: []
 
@@ -21,32 +16,10 @@ defmodule Prismic.RichText do
     }
   end
 
-  def to_html(%__MODULE__{blocks: blocks}) do
-    blocks
-    |> Enum.map(fn %Block{text: text, spans: spans} ->
-      ["<p>", add_spans(text, spans), "</p>"]
-    end)
-  end
+  def to_html(content), do: HTMLFormatter.render(content)
 
-  def add_spans(text, spans) do
-    for {c, i} <- text |> String.graphemes() |> Enum.with_index() do
-      start_spans =
-        spans
-        |> Enum.filter(fn %{"start" => s} -> s == i end)
-        |> Enum.map(fn %{"type" => type} -> ["<", type, ">"] end)
-
-      end_spans =
-        spans
-        |> Enum.filter(fn %{"end" => e} -> e == i end)
-        |> Enum.map(fn %{"type" => type} -> ["</", type, ">"] end)
-
-      case {start_spans, end_spans} do
-        {[], []} -> [c]
-        {start_spans, []} -> [start_spans, c]
-        {[], end_spans} -> [end_spans, c]
-        {start_spans, end_spans} -> [end_spans, start_spans, c]
-      end
-    end
+  defimpl String.Chars do
+    def to_string(content), do: PlainTextFormatter.render(content)
   end
 
   defimpl Phoenix.HTML.Safe do
