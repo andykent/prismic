@@ -28,7 +28,12 @@ defmodule Prismic.Image do
   end
 
   defp modify_query(query_string, params) do
-    query = query_string |> URI.query_decoder() |> Enum.to_list() |> Enum.reverse()
+    query =
+      query_string
+      |> URI.query_decoder()
+      |> Enum.to_list()
+      |> Enum.reverse()
+      |> Enum.map(fn {k, v} -> {String.to_atom(k), v} end)
 
     params
     |> Enum.reduce(query, fn {k, v}, q -> Keyword.put(q, k, v) end)
