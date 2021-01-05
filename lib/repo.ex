@@ -1,6 +1,7 @@
 defmodule Prismic.Repo do
   alias Prismic.Repo.Support
   alias Prismic.Cache.{Store, Hydrator}
+  alias Prismic.Link
 
   # defmacro __using__(args \\ []) do
   #   content_types = Keyword.get(args, :content_types, [])
@@ -27,6 +28,9 @@ defmodule Prismic.Repo do
 
     quote do
       def cache, do: unquote(cache)
+
+      def get(%Link{is_broken: true}), do: {:error, "Broken Link"}
+      def get(%Link{id: id, type: type, revision: ref}), do: get_by_id(type, id, ref: ref)
 
       def get(type, opts \\ []) do
         case revision_for_opts(opts) do
