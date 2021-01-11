@@ -60,6 +60,8 @@ defmodule Prismic.RichText.HTMLFormatter do
   defp to_tag(_, _attrs, content), do: content
 
   def add_spans(text, spans) do
+    char_count = text |> String.graphemes() |> length()
+
     for {c, i} <- text |> String.graphemes() |> Enum.with_index() do
       start_spans =
         spans
@@ -71,11 +73,23 @@ defmodule Prismic.RichText.HTMLFormatter do
         |> Enum.filter(fn %{"end" => e} -> e == i end)
         |> Enum.map(&close_span/1)
 
-      case {start_spans, end_spans} do
-        {[], []} -> [c]
-        {start_spans, []} -> [start_spans, c]
-        {[], end_spans} -> [end_spans, c]
-        {start_spans, end_spans} -> [end_spans, start_spans, c]
+      final_end_spans =
+        if i == char_count - 1 do
+          spans
+          |> Enum.filter(fn %{"end" => e} -> e == char_count end)
+          |> Enum.map(&close_span/1)
+        else
+          []
+        end
+
+      case {start_spans, end_spans, final_end_spans} do
+        {[], [], []} -> [c]
+        {start_spans, [], []} -> [start_spans, c]
+        {start_spans, [], final_end_spans} -> [start_spans, c, final_end_spans]
+        {[], end_spans, []} -> [end_spans, c]
+        {[], end_spans, final_end_spans} -> [end_spans, c, final_end_spans]
+        {start_spans, end_spans, []} -> [end_spans, start_spans, c]
+        {start_spans, end_spans, final_end_spans} -> [end_spans, start_spans, c, final_end_spans]
       end
     end
   end
