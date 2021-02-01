@@ -10,7 +10,7 @@ defmodule Prismic.Link do
     }
   end
 
-  def build(_link, revision, content_types) do
+  def build(_link, _revision, _content_types) do
     nil
   end
 
