@@ -44,9 +44,6 @@ defmodule Prismic.Cache do
         table: table,
         manager: name
       }) do
-    # children = for(ref <- refs, do: {Prismic.Cache.RefCache, repo: repo, ref: ref})
-    IO.inspect({"REG", registry})
-
     children = [
       {Store, name: store, table: table},
       {Registry, keys: :unique, name: registry},

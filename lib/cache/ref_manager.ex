@@ -59,7 +59,6 @@ defmodule Prismic.Cache.RefManager do
 
     for ref <- refs do
       name = {:via, Registry, {registry, ref}}
-      IO.inspect(name)
       child = {Prismic.Cache.RefCache, name: name, repo: repo, ref: ref, store: store}
       DynamicSupervisor.start_child(ref_cache_sup, child)
     end
