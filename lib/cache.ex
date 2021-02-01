@@ -27,10 +27,11 @@ defmodule Prismic.Cache do
       registry: registry,
       ref_cache_sup: ref_cache_sup,
       store: store,
-      table: repo.cache()
+      table: repo.cache(),
+      manager: name
     }
 
-    Supervisor.start_link(__MODULE__, args, name: name)
+    Supervisor.start_link(__MODULE__, args)
   end
 
   @impl Supervisor
@@ -40,15 +41,23 @@ defmodule Prismic.Cache do
         registry: registry,
         ref_cache_sup: ref_cache_sup,
         store: store,
-        table: table
+        table: table,
+        manager: name
       }) do
     # children = for(ref <- refs, do: {Prismic.Cache.RefCache, repo: repo, ref: ref})
+    IO.inspect({"REG", registry})
+
     children = [
       {Store, name: store, table: table},
       {Registry, keys: :unique, name: registry},
       {DynamicSupervisor, name: ref_cache_sup, strategy: :one_for_one},
       {RefManager,
-       repo: repo, refs: refs, registry: registry, ref_cache_sup: ref_cache_sup, store: store}
+       name: name,
+       repo: repo,
+       refs: refs,
+       registry: registry,
+       ref_cache_sup: ref_cache_sup,
+       store: store}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

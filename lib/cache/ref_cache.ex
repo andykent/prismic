@@ -5,21 +5,22 @@ defmodule Prismic.Cache.RefCache do
 
   @refresh_rate 1 * 60 * 1000
 
-  def refresh do
-    GenServer.cast(__MODULE__, {:refresh, false})
+  def refresh(cache) do
+    GenServer.cast(cache, {:refresh, false})
   end
 
   @doc "Trigger a refresh and force pull changes regardless of if the ref has changed or not"
-  def refresh! do
-    GenServer.cast(__MODULE__, {:refresh, true})
+  def refresh!(cache) do
+    GenServer.cast(cache, {:refresh, true})
   end
 
   @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(opts) do
+    name = Keyword.fetch!(opts, :name)
     repo = Keyword.fetch!(opts, :repo)
     ref = Keyword.fetch!(opts, :ref)
     store = Keyword.fetch!(opts, :store)
-    GenServer.start_link(__MODULE__, %{repo: repo, ref: ref, store: store})
+    GenServer.start_link(__MODULE__, %{repo: repo, ref: ref, store: store}, name: name)
   end
 
   @impl GenServer
@@ -66,12 +67,10 @@ defmodule Prismic.Cache.RefCache do
       :ok = Prismic.Cache.Store.commit(state.store, state.ref, revision)
       %{state | revision: revision}
     end
-
-    # rescue
-    #   e ->
-    #     Logger.warn("[Prismic.Cache] Error encountered during refresh - #{inspect(e)}")
-    #     Sentry.capture_exception(e, stacktrace: __STACKTRACE__)
-    #     state
+  rescue
+    e ->
+      Logger.warn("[Prismic.Cache] Error encountered during refresh - #{inspect(e)}")
+      state
   end
 
   @impl GenServer
