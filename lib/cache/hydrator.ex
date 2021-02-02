@@ -11,6 +11,8 @@ defmodule Prismic.Cache.Hydrator do
     for d <- data, do: do_hydrate(store, d, recur)
   end
 
+  defp do_hydrate(_store, %Prismic.Link{is_broken: true}, _recur), do: nil
+
   defp do_hydrate(store, %Prismic.Link{type: type, id: id, revision: revision}, recur) do
     case Prismic.Cache.Store.fetch(store, revision, type, id) do
       {:ok, record} -> if(recur, do: do_hydrate(store, record, true), else: record)

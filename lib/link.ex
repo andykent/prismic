@@ -2,10 +2,12 @@ defmodule Prismic.Link do
   defstruct id: nil, type: nil, is_broken: false, revision: nil
 
   def build(%{"id" => id, "type" => type_str, "isBroken" => is_broken}, revision, content_types) do
+    type = to_content_type(type_str, content_types)
+
     %__MODULE__{
       id: id,
-      type: to_content_type(type_str, content_types),
-      is_broken: is_broken,
+      type: type,
+      is_broken: is_broken || type == nil,
       revision: revision
     }
   end
@@ -13,6 +15,8 @@ defmodule Prismic.Link do
   def build(_link, _revision, _content_types) do
     nil
   end
+
+  defp to_content_type("broken_type", _content_types), do: nil
 
   defp to_content_type(type_str, content_types) do
     type = String.to_existing_atom(type_str)
