@@ -6,8 +6,6 @@ defmodule Prismic.RichText do
   def build(nil), do: %__MODULE__{blocks: []}
 
   def build(block_data) do
-    IO.inspect(block_data)
-
     blocks =
       for block <- block_data do
         %Block{
