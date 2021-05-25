@@ -15,6 +15,11 @@ defmodule Prismic.RichText.HTMLFormatter do
     end)
   end
 
+  def render({:img, attrs, url}) do
+    {:safe, img} = HTML.Tag.img_tag(url, attrs)
+    img
+  end
+
   def render({tag, attrs, content}) when is_atom(tag) do
     {:safe, content} = HTML.Tag.content_tag(tag, {:safe, render(content)}, attrs)
     content
@@ -43,8 +48,12 @@ defmodule Prismic.RichText.HTMLFormatter do
 
   defp as_li({_, attr, content}), do: {:li, attr, content}
 
+  defp block_to_tag(%RichText.Block{type: "image", url: url, alt: alt}) do
+    {:img, [alt: alt], url}
+  end
+
   defp block_to_tag(%RichText.Block{type: type, text: text, spans: spans}) do
-    content = add_spans(text, spans)
+    content = add_spans(text, spans || [])
     to_tag(type, [], {:content, content})
   end
 

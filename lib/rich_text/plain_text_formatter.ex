@@ -8,4 +8,9 @@ defmodule Prismic.RichText.PlainTextFormatter do
   end
 
   defp block_to_plain_text(%Prismic.RichText.Block{text: text}), do: text
+
+  defp block_to_plain_text(%Prismic.RichText.Block{type: "image", url: url, alt: alt}),
+    do: "[#{alt}](#{url})"
+
+  defp block_to_plain_text(%Prismic.RichText.Block{text: nil}), do: ""
 end
