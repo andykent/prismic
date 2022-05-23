@@ -35,8 +35,14 @@ defmodule Prismic.Cache.Store do
   @spec fetch(any, any, any, any) :: any
   def fetch(store, revision, type, {index, value}) do
     case get(store, {:index, revision, type, index, value}) do
-      {:ok, id} -> fetch(store, revision, type, id)
-      error -> error
+      {:ok, id} ->
+        fetch(store, revision, type, id)
+
+      error ->
+        with {:ok, redirected_id} <- get(store, {:redirect, revision, type, index, value}),
+             {:ok, record} <- fetch(store, revision, type, redirected_id) do
+          {:redirected, record}
+        end
     end
   end
 
@@ -77,9 +83,21 @@ defmodule Prismic.Cache.Store do
       type = Prismic.Record.content_type(record)
       id = Prismic.Record.identity(record)
       :ets.insert(table, {{:record, rev, type, id}, record})
+
+      # Indexing
       indexes = Prismic.Record.indexes(record)
       index_data = for({index, val} <- indexes, do: {{:index, rev, type, index, val}, id})
       :ets.insert(table, index_data)
+
+      # Redirect Indexing
+      redirects = Prismic.Record.redirects(record)
+
+      redirect_data =
+        for {index, values} <- redirects, val <- values do
+          {{:redirect, rev, type, index, val}, id}
+        end
+
+      :ets.insert(table, redirect_data)
     end
 
     {:reply, :ok, state}

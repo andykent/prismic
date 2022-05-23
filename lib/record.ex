@@ -1,4 +1,5 @@
 defprotocol Prismic.Record do
+  @fallback_to_any true
   @moduledoc """
   A small protocol for assigning identies to Structs. Example...
 
@@ -9,6 +10,9 @@ defprotocol Prismic.Record do
 
   @spec indexes(t) :: keyword()
   def indexes(value)
+
+  @spec redirects(t) :: keyword()
+  def redirects(value)
 
   @spec content_type(t) :: atom()
   def content_type(value)
