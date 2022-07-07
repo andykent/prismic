@@ -38,7 +38,7 @@ defmodule Prismic.Cache.Store do
       {:ok, id} ->
         fetch(store, revision, type, id)
 
-      error ->
+      _error ->
         with {:ok, redirected_id} <- get(store, {:redirect, revision, type, index, value}),
              {:ok, record} <- fetch(store, revision, type, redirected_id) do
           {:redirected, record}
