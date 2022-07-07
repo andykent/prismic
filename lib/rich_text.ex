@@ -1,11 +1,13 @@
 defmodule Prismic.RichText do
   alias Prismic.RichText.{Block, HTMLFormatter, PlainTextFormatter}
 
-  defstruct blocks: []
+  defstruct blocks: [], link_resolver: nil
 
-  def build(nil), do: %__MODULE__{blocks: []}
+  def build(block_data, link_resolver \\ nil)
 
-  def build(block_data) do
+  def build(nil, link_resolver), do: %__MODULE__{blocks: [], link_resolver: link_resolver}
+
+  def build(block_data, link_resolver) do
     blocks =
       for block <- block_data do
         %Block{
@@ -20,7 +22,8 @@ defmodule Prismic.RichText do
       end
 
     %__MODULE__{
-      blocks: blocks
+      blocks: blocks,
+      link_resolver: link_resolver
     }
   end
 

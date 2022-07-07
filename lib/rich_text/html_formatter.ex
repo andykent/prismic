@@ -3,9 +3,9 @@ defmodule Prismic.RichText.HTMLFormatter do
   alias RichText.HTMLPreProcessor
   alias Phoenix.HTML
 
-  def render(%RichText{blocks: blocks}) do
+  def render(%RichText{blocks: blocks, link_resolver: link_resolver}) do
     blocks
-    |> Enum.map(&block_to_tag/1)
+    |> Enum.map(fn block -> block_to_tag(block, link_resolver) end)
     |> Enum.chunk_by(fn {tag, _a, _c} -> tag end)
     |> Enum.map(&wrap_nested/1)
     |> Enum.map(&render/1)
@@ -48,12 +48,12 @@ defmodule Prismic.RichText.HTMLFormatter do
 
   defp as_li({_, attr, content}), do: {:li, attr, content}
 
-  defp block_to_tag(%RichText.Block{type: "image", url: url, alt: alt}) do
+  defp block_to_tag(%RichText.Block{type: "image", url: url, alt: alt}, _) do
     {:img, [alt: alt], url}
   end
 
-  defp block_to_tag(%RichText.Block{type: type, text: text, spans: spans}) do
-    content = add_spans(text, spans || [])
+  defp block_to_tag(%RichText.Block{type: type, text: text, spans: spans}, link_resolver) do
+    content = add_spans(text, spans || [], link_resolver)
     to_tag(type, [], {:content, content})
   end
 
@@ -68,14 +68,14 @@ defmodule Prismic.RichText.HTMLFormatter do
   defp to_tag("o-list-item", attrs, content), do: {:ol_li, attrs, content}
   defp to_tag(_, _attrs, content), do: content
 
-  def add_spans(text, spans) do
+  def add_spans(text, spans, link_resolver) do
     char_count = text |> String.graphemes() |> length()
 
     for {c, i} <- text |> String.graphemes() |> Enum.with_index() do
       start_spans =
         spans
         |> Enum.filter(fn %{"start" => s} -> s == i end)
-        |> Enum.map(&open_span/1)
+        |> Enum.map(fn node -> open_span(node, link_resolver) end)
 
       end_spans =
         spans
@@ -106,13 +106,13 @@ defmodule Prismic.RichText.HTMLFormatter do
   defp open_tag(tag, attrs), do: [?<, tag, tag_attrs(attrs), ?>]
   defp close_tag(tag), do: [?<, ?/, tag, ?>]
 
-  defp open_span(span) do
-    {tag, attrs} = HTMLPreProcessor.Default.span_tag(span)
+  defp open_span(span, link_resolver) do
+    {tag, attrs} = HTMLPreProcessor.Default.span_tag(span, link_resolver)
     open_tag(tag, attrs)
   end
 
   defp close_span(span) do
-    {tag, _attrs} = HTMLPreProcessor.Default.span_tag(span)
+    {tag, _attrs} = HTMLPreProcessor.Default.span_tag(span, nil)
     close_tag(tag)
   end
 

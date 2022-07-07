@@ -96,9 +96,13 @@ defmodule Prismic.Repo do
       def image(nil), do: nil
       def image(image_data), do: Prismic.Image.build(image_data)
 
-      def rich_text(text_data), do: Prismic.RichText.build(text_data)
+      def rich_text(text_data), do: Prismic.RichText.build(text_data, &resolve_document_link/1)
 
       def slices(data), do: Prismic.Slice.build(data)
+
+      def resolve_document_link(doc), do: nil
+
+      defoverridable(resolve_document_link: 1)
     end
   end
 end
