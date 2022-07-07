@@ -10,7 +10,7 @@ defmodule Prismic.RichText.HTMLPreProcessor.Default do
     {"a", [href: href]}
   end
 
-  def span_tag(%{"type" => "hyperlink", "data" => data}, nil), do: {"a", [href: "#"]}
+  def span_tag(%{"type" => "hyperlink"}, nil), do: {"span", []}
 
   def span_tag(%{"type" => "hyperlink", "data" => data}, resolver) do
     case resolver.(data) do

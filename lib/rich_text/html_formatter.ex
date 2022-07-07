@@ -80,13 +80,13 @@ defmodule Prismic.RichText.HTMLFormatter do
       end_spans =
         spans
         |> Enum.filter(fn %{"end" => e} -> e == i end)
-        |> Enum.map(&close_span/1)
+        |> Enum.map(fn node -> close_span(node, link_resolver) end)
 
       final_end_spans =
         if i == char_count - 1 do
           spans
           |> Enum.filter(fn %{"end" => e} -> e == char_count end)
-          |> Enum.map(&close_span/1)
+          |> Enum.map(fn node -> close_span(node, link_resolver) end)
         else
           []
         end
@@ -111,8 +111,8 @@ defmodule Prismic.RichText.HTMLFormatter do
     open_tag(tag, attrs)
   end
 
-  defp close_span(span) do
-    {tag, _attrs} = HTMLPreProcessor.Default.span_tag(span, nil)
+  defp close_span(span, link_resolver) do
+    {tag, _attrs} = HTMLPreProcessor.Default.span_tag(span, link_resolver)
     close_tag(tag)
   end
 
