@@ -10,6 +10,7 @@ defmodule Prismic.Cache.RefManager do
     registry = Keyword.fetch!(opts, :registry)
     ref_cache_sup = Keyword.fetch!(opts, :ref_cache_sup)
     store = Keyword.fetch!(opts, :store)
+    refresh_rate = Keyword.fetch!(opts, :refresh_rate)
 
     GenServer.start_link(
       __MODULE__,
@@ -18,29 +19,21 @@ defmodule Prismic.Cache.RefManager do
         refs: refs,
         registry: registry,
         ref_cache_sup: ref_cache_sup,
-        store: store
+        store: store,
+        refresh_rate: refresh_rate
       },
       name: name
     )
   end
 
   @impl GenServer
-  @spec init(%{
-          :ref_cache_sup => any,
-          :refs => any,
-          :registry => any,
-          :repo => any,
-          :store => any,
-          optional(any) => any
-        }) ::
-          {:ok, %{ref_cache_sup: any, refs: any, registry: any, repo: any, store: any},
-           {:continue, :start_ref_caches}}
   def init(%{
         repo: repo,
         refs: refs,
         registry: registry,
         ref_cache_sup: ref_cache_sup,
-        store: store
+        store: store,
+        refresh_rate: refresh_rate
       }) do
     {:ok,
      %{
@@ -48,18 +41,29 @@ defmodule Prismic.Cache.RefManager do
        refs: refs,
        registry: registry,
        ref_cache_sup: ref_cache_sup,
-       store: store
+       store: store,
+       refresh_rate: refresh_rate
      }, {:continue, :start_ref_caches}}
   end
 
   @impl true
   def handle_continue(:start_ref_caches, state) do
-    %{repo: repo, refs: refs, registry: registry, ref_cache_sup: ref_cache_sup, store: store} =
-      state
+    %{
+      repo: repo,
+      refs: refs,
+      registry: registry,
+      ref_cache_sup: ref_cache_sup,
+      store: store,
+      refresh_rate: refresh_rate
+    } = state
 
     for ref <- refs do
       name = {:via, Registry, {registry, ref}}
-      child = {Prismic.Cache.RefCache, name: name, repo: repo, ref: ref, store: store}
+
+      child =
+        {Prismic.Cache.RefCache,
+         name: name, repo: repo, ref: ref, store: store, refresh_rate: refresh_rate}
+
       DynamicSupervisor.start_child(ref_cache_sup, child)
     end
 

@@ -3,8 +3,6 @@ defmodule Prismic.Cache.RefCache do
 
   require Logger
 
-  @refresh_rate 1 * 60 * 1000
-
   def refresh(cache) do
     GenServer.cast(cache, {:refresh, false})
   end
@@ -20,16 +18,23 @@ defmodule Prismic.Cache.RefCache do
     repo = Keyword.fetch!(opts, :repo)
     ref = Keyword.fetch!(opts, :ref)
     store = Keyword.fetch!(opts, :store)
-    GenServer.start_link(__MODULE__, %{repo: repo, ref: ref, store: store}, name: name)
+    refresh_rate = Keyword.fetch!(opts, :refresh_rate)
+
+    GenServer.start_link(
+      __MODULE__,
+      %{repo: repo, ref: ref, store: store, refresh_rate: refresh_rate},
+      name: name
+    )
   end
 
   @impl GenServer
-  def init(%{repo: repo, ref: ref, store: store}) do
+  def init(%{repo: repo, ref: ref, store: store, refresh_rate: refresh_rate}) do
     Logger.info("[Prismic.Cache] caching ref '#{ref}'")
     Prismic.Cache.Store.init_ref(store, ref)
-    schedule_refresh()
+    schedule_refresh(refresh_rate)
 
-    {:ok, %{repo: repo, ref: ref, store: store, revision: nil}, {:continue, :refresh}}
+    {:ok, %{repo: repo, ref: ref, store: store, revision: nil, refresh_rate: refresh_rate},
+     {:continue, :refresh}}
   end
 
   @impl GenServer
@@ -74,12 +79,11 @@ defmodule Prismic.Cache.RefCache do
   end
 
   @impl GenServer
-  def handle_info(:refresh, state) do
-    schedule_refresh()
+  def handle_info(:refresh, %{refresh_rate: delay} = state) do
+    schedule_refresh(delay)
     {:noreply, state, {:continue, :refresh}}
   end
 
-  defp schedule_refresh do
-    Process.send_after(self(), :refresh, @refresh_rate)
-  end
+  defp schedule_refresh(ms) when is_integer(ms), do: Process.send_after(self(), :refresh, ms)
+  defp schedule_refresh(_), do: nil
 end
