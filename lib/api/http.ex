@@ -28,14 +28,40 @@ defmodule Prismic.API.HTTP do
   end
 
   def list_by_type({client, _ref}, type) do
-    case search(client, "[[at(document.type,\"#{type}\")]]") do
-      {:ok, %{body: %{"results" => results}}} -> results
-      e -> raise(e)
+    search(client, "[[at(document.type,\"#{type}\")]]")
+  end
+
+  defp search(client, query, page \\ 1) do
+    {results, next_page} =
+      client
+      |> get_search(query, page)
+      |> parse_search_response!()
+
+    if next_page do
+      results = [results | search(client, query, next_page)]
+
+      if page == 1 do
+        List.flatten(results)
+      else
+        results
+      end
+    else
+      results
     end
   end
 
-  defp search(client, query) do
-    Tesla.get(client, "/api/v2/documents/search", query: [q: query, pageSize: 200])
+  defp parse_search_response!(response) do
+    case response do
+      {:ok, %{body: %{"results" => results, "next_page" => next_page, "page" => page}}} ->
+        {results, if(next_page, do: page + 1, else: nil)}
+
+      e ->
+        raise(e)
+    end
+  end
+
+  defp get_search(client, query, page) do
+    Tesla.get(client, "/api/v2/documents/search", query: [q: query, pageSize: 100, page: page])
   end
 
   defp match_ref(refs, "master") do
@@ -55,9 +81,7 @@ defmodule Prismic.API.HTTP do
       ids = Enum.map(refs, fn %{"id" => id} -> id end)
       labels = Enum.map(refs, fn %{"label" => label} -> label end)
 
-      raise "No prismic ref with id #{ref_id} found, possible values are #{
-              Enum.join(ids ++ labels, ", ")
-            }"
+      raise "No prismic ref with id #{ref_id} found, possible values are #{Enum.join(ids ++ labels, ", ")}"
     end
 
     ref_record["ref"]
