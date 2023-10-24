@@ -21,6 +21,10 @@ defmodule Prismic.Cache.Store do
     GenServer.call(store, {:commit, ref, revision})
   end
 
+  def cleanup(store, revision) do
+    GenServer.call(store, {:cleanup, revision})
+  end
+
   # def drop_ref(store, ref) do
   # end
 
@@ -135,22 +139,38 @@ defmodule Prismic.Cache.Store do
   end
 
   @impl GenServer
+  def handle_call({:cleanup, revision}, _from, %{table: table} = state) do
+    run_cleanup(table, revision)
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
   def handle_info({:cleanup, revision}, %{table: table} = state) do
+    run_cleanup(table, revision)
+    {:noreply, state}
+  end
+
+  defp run_cleanup(table, revision) do
     revision_key = {:revision, revision}
 
     case get(table, revision_key) do
       {:ok, []} ->
+        # remove records
         for [type, uid] <- :ets.match(table, {{:record, revision, :"$1", :"$2"}, :_}) do
           :ets.delete(table, {:record, revision, type, uid})
         end
 
+        # Cleanup Index
+        for [type, idx, val] <- :ets.match(table, {{:index, revision, :"$1", :"$2", :"$3"}, :_}) do
+          :ets.delete(table, {:index, revision, type, idx, val})
+        end
+
+        # remove revision
         :ets.delete(table, revision_key)
 
       _ ->
         nil
     end
-
-    {:noreply, state}
   end
 
   defp create_table(tab) do
