@@ -89,7 +89,7 @@ defmodule Prismic.Cache.RefManager do
   defp do_refresh(registry, ref) do
     case Registry.lookup(registry, ref) do
       [{pid, _}] -> Prismic.Cache.RefCache.refresh!(pid)
-      _ -> Logger.warn("Unable to refresh #{ref} due to missing process")
+      _ -> Logger.warning("Unable to refresh #{ref} due to missing process")
     end
   end
 end

@@ -74,7 +74,7 @@ defmodule Prismic.Cache.RefCache do
     end
   rescue
     e ->
-      Logger.warn("[Prismic.Cache] Error encountered during refresh - #{inspect(e)}")
+      Logger.warning("[Prismic.Cache] Error encountered during refresh - #{inspect(e)}")
       state
   end
 

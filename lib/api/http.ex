@@ -90,7 +90,7 @@ defmodule Prismic.API.HTTP do
   defp should_retry?({:ok, %{status: status}}) when status < 300, do: false
 
   defp should_retry?(e) do
-    Logger.warn("Prismic API request requires retry, got: #{inspect(e)}")
+    Logger.warning("Prismic API request requires retry, got: #{inspect(e)}")
     true
   end
 end
