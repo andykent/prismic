@@ -1,6 +1,7 @@
 defmodule Prismic.RichText.HTMLFormatter do
   alias Prismic.RichText
   alias RichText.HTMLPreProcessor
+  alias PhoenixHTMLHelpers.Tag
   alias Phoenix.HTML
 
   def render(%RichText{blocks: blocks, link_resolver: link_resolver}) do
@@ -16,12 +17,12 @@ defmodule Prismic.RichText.HTMLFormatter do
   end
 
   def render({:img, attrs, url}) do
-    {:safe, img} = HTML.Tag.img_tag(url, attrs)
+    {:safe, img} = Tag.img_tag(url, attrs)
     img
   end
 
   def render({tag, attrs, content}) when is_atom(tag) do
-    {:safe, content} = HTML.Tag.content_tag(tag, {:safe, render(content)}, attrs)
+    {:safe, content} = Tag.content_tag(tag, {:safe, render(content)}, attrs)
     content
   end
 

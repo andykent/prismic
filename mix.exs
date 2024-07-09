@@ -21,10 +21,11 @@ defmodule Prismic.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:tesla, "~> 1.4"},
-      {:hackney, "1.18.1"},
-      {:phoenix_html, "3.2.0"},
-      {:plug, "1.13.6"}
+      {:tesla, "~> 1.11"},
+      {:hackney, "~> 1.18"},
+      {:phoenix_html, "~> 4.0"},
+      {:phoenix_html_helpers, "~> 1.0"},
+      {:plug, "~> 1.16"}
     ]
   end
 end
