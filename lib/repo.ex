@@ -32,6 +32,8 @@ defmodule Prismic.Repo do
       def refresh(ref), do: Prismic.Cache.RefManager.refresh(cache(), ref)
       def refresh_all, do: Prismic.Cache.RefManager.refresh_all(cache())
 
+      def available_refs, do: Prismic.Cache.RefManager.available_refs(cache())
+
       def get(%Link{is_broken: true}), do: {:error, "Broken Link"}
       def get(%Link{id: id, type: type, revision: ref}), do: get_by_id(type, id, ref: ref)
 

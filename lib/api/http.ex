@@ -3,7 +3,25 @@ defmodule Prismic.API.HTTP do
 
   require Logger
 
+  def fetch_repository(config) do
+    client = base_client(config)
+
+    case Tesla.get(client, "/api/v2") do
+      {:ok, %{body: body}} -> {:ok, body}
+      {:error, error} -> {:error, error}
+    end
+  end
+
   def client(config, ref_id) do
+    client = base_client(config)
+    {:ok, %{body: body}} = Tesla.get(client, "/api/v2")
+    %{"refs" => refs} = body
+    ref = match_ref(refs, ref_id)
+    client = Tesla.client(Tesla.Client.middleware(client) ++ [{Tesla.Middleware.Query, ref: ref}])
+    {client, ref}
+  end
+
+  defp base_client(config) do
     middleware = [
       Tesla.Middleware.Logger,
       {Tesla.Middleware.BaseUrl, Keyword.fetch!(config, :repository_url)},
@@ -19,12 +37,7 @@ defmodule Prismic.API.HTTP do
       {Tesla.Middleware.Timeout, timeout: 10_000}
     ]
 
-    client = Tesla.client(middleware)
-    {:ok, %{body: body}} = Tesla.get(client, "/api/v2")
-    %{"refs" => refs} = body
-    ref = match_ref(refs, ref_id)
-    client = Tesla.client(middleware ++ [{Tesla.Middleware.Query, ref: ref}])
-    {client, ref}
+    Tesla.client(middleware)
   end
 
   def list_by_type({client, _ref}, type) do
