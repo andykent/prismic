@@ -67,7 +67,7 @@ defmodule Prismic.Cache.RefManager do
   @impl true
   def handle_call(:refresh_all, _from, state) do
     state = start_missing_ref_caches(state)
-    for {_ref, pid} <- state.tracked_ref_pids, do: Prismic.Cache.RefCache.refresh!(pid)
+    for {_ref, pid} <- state.tracked_ref_pids, do: Prismic.Cache.RefCache.refresh!(pid, :blocking)
     {:reply, :ok, state}
   end
 
@@ -133,7 +133,7 @@ defmodule Prismic.Cache.RefManager do
 
   defp do_refresh(registry, ref) do
     case Registry.lookup(registry, ref) do
-      [{pid, _}] -> Prismic.Cache.RefCache.refresh!(pid)
+      [{pid, _}] -> Prismic.Cache.RefCache.refresh!(pid, :blocking)
       _ -> Logger.warning("[Prismic.Cache] Unable to refresh #{ref} due to missing process")
     end
   end

@@ -3,13 +3,21 @@ defmodule Prismic.Cache.RefCache do
 
   require Logger
 
-  def refresh(cache) do
-    GenServer.cast(cache, {:refresh, false})
+  def refresh(cache, mode \\ :async) do
+    if mode == :async do
+      GenServer.cast(cache, {:refresh, false})
+    else
+      GenServer.call(cache, {:refresh, false})
+    end
   end
 
   @doc "Trigger a refresh and force pull changes regardless of if the ref has changed or not"
-  def refresh!(cache) do
-    GenServer.cast(cache, {:refresh, true})
+  def refresh!(cache, mode \\ :async) do
+    if mode == :async do
+      GenServer.cast(cache, {:refresh, true})
+    else
+      GenServer.call(cache, {:refresh, true})
+    end
   end
 
   @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
@@ -44,6 +52,11 @@ defmodule Prismic.Cache.RefCache do
 
   @impl GenServer
   def handle_cast({:refresh, force}, state) do
+    {:noreply, do_refresh(state, force)}
+  end
+
+  @impl GenServer
+  def handle_call({:refresh, force}, state) do
     {:noreply, do_refresh(state, force)}
   end
 
