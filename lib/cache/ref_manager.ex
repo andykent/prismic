@@ -65,8 +65,9 @@ defmodule Prismic.Cache.RefManager do
   def available_refs(manager), do: GenServer.call(manager, :available_refs)
 
   @impl true
-  def handle_call(:refresh_all, _from, %{registry: registry, refs: refs} = state) do
-    for ref <- refs, do: do_refresh(registry, ref)
+  def handle_call(:refresh_all, _from, state) do
+    state = start_missing_ref_caches(state)
+    for {_ref, pid} <- state.tracked_ref_pids, do: Prismic.Cache.RefCache.refresh!(pid)
     {:reply, :ok, state}
   end
 
