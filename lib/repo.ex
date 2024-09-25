@@ -78,7 +78,7 @@ defmodule Prismic.Repo do
       def hydrate_once(data), do: Hydrator.hydrate_once(cache(), data)
 
       defp revision_for_opts(opts) do
-        ref = Keyword.get(opts, :ref, "master")
+        ref = Keyword.get(opts, :ref, "Master")
         Store.current_revision(cache(), ref)
       end
 
@@ -86,7 +86,7 @@ defmodule Prismic.Repo do
 
       defoverridable(client_config: 0)
 
-      def client(ref \\ "master"), do: Prismic.API.client(client_config(), ref)
+      def client(ref \\ "Master"), do: Prismic.API.client(client_config(), ref)
 
       def fetch_all(client), do: Support.fetch_all(client, content_types())
       def fetch_by_type(client, type), do: Support.fetch_by_type(client, content_types(), type)

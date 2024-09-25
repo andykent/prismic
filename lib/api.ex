@@ -8,7 +8,7 @@ defmodule Prismic.API do
     adapter().fetch_repository(config)
   end
 
-  def client(config, ref_id \\ "master") do
+  def client(config, ref_id \\ "Master") do
     adapter().client(config, ref_id)
   end
 

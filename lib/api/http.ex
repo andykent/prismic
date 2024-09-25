@@ -77,7 +77,7 @@ defmodule Prismic.API.HTTP do
     Tesla.get(client, "/api/v2/documents/search", query: [q: query, pageSize: 100, page: page])
   end
 
-  defp match_ref(refs, "master") do
+  defp match_ref(refs, "Master") do
     master = Enum.find(refs, fn %{"isMasterRef" => is_master} -> is_master end)
     master["ref"]
   end
