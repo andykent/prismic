@@ -56,10 +56,10 @@ defmodule Prismic.Cache.RefCache do
   end
 
   @impl GenServer
-  def handle_call({:refresh, force}, state) do
-    {:noreply, do_refresh(state, force)}
+  def handle_call({:refresh, force}, _from, state) do
+    {:reply, :ok, do_refresh(state, force)}
   end
-
+  
   def do_refresh(state, force \\ false) do
     Logger.info("[Prismic.Cache] refreshing...")
     %{repo: repo, ref: ref} = state
