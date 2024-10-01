@@ -1,4 +1,6 @@
 defmodule Prismic.Cache.RefCache do
+  @timeout 60 * 1000
+
   use GenServer
 
   require Logger
@@ -7,7 +9,7 @@ defmodule Prismic.Cache.RefCache do
     if mode == :async do
       GenServer.cast(cache, {:refresh, false})
     else
-      GenServer.call(cache, {:refresh, false})
+      GenServer.call(cache, {:refresh, false}, @timeout)
     end
   end
 
@@ -16,7 +18,7 @@ defmodule Prismic.Cache.RefCache do
     if mode == :async do
       GenServer.cast(cache, {:refresh, true})
     else
-      GenServer.call(cache, {:refresh, true})
+      GenServer.call(cache, {:refresh, true}, @timeout)
     end
   end
 
@@ -59,7 +61,7 @@ defmodule Prismic.Cache.RefCache do
   def handle_call({:refresh, force}, _from, state) do
     {:reply, :ok, do_refresh(state, force)}
   end
-  
+
   def do_refresh(state, force \\ false) do
     Logger.info("[Prismic.Cache] refreshing...")
     %{repo: repo, ref: ref} = state

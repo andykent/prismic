@@ -1,4 +1,6 @@
 defmodule Prismic.Cache.RefManager do
+  @timeout 60 * 1000
+
   use GenServer
 
   require Logger
@@ -58,11 +60,11 @@ defmodule Prismic.Cache.RefManager do
   defp fetch_refs(refs) when is_list(refs), do: refs
   defp fetch_refs(refs), do: [refs]
 
-  def refresh_all(manager), do: GenServer.call(manager, :refresh_all)
+  def refresh_all(manager), do: GenServer.call(manager, :refresh_all, @timeout)
 
-  def refresh(manager, ref), do: GenServer.call(manager, {:refresh, ref})
+  def refresh(manager, ref), do: GenServer.call(manager, {:refresh, ref}, @timeout)
 
-  def available_refs(manager), do: GenServer.call(manager, :available_refs)
+  def available_refs(manager), do: GenServer.call(manager, :available_refs, @timeout)
 
   @impl true
   def handle_call(:refresh_all, _from, state) do
