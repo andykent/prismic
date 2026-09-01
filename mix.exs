@@ -22,7 +22,7 @@ defmodule Prismic.MixProject do
   defp deps do
     [
       {:tesla, "~> 1.11"},
-      {:hackney, "~> 1.18"},
+      {:hackney, "~> 4.0"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_html_helpers, "~> 1.0"},
       {:plug, "~> 1.16"}
