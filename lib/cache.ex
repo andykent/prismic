@@ -3,8 +3,6 @@ defmodule Prismic.Cache do
 
   use Supervisor
 
-  require Logger
-
   @default_refresh_rate 1 * 60 * 1000
 
   defmacro __using__(_args \\ []) do
