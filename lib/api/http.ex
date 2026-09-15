@@ -1,80 +1,91 @@
 defmodule Prismic.API.HTTP do
+  @moduledoc """
+  The `Prismic.API` implementation that talks to a Prismic repository over HTTP with
+  `Req`.
+
+  `config` carries the `:repository_url` and `:access_token`, and optionally
+  `:req_options`, Req options merged onto every request, such as a `:finch` instance,
+  timeouts or a `Req.Test` plug. By default a request waits ten seconds for a response
+  and is retried up to ten times, backing off from 100ms to four seconds, on a 5xx, a
+  408 or 429, or a dropped connection.
+  """
   @behaviour Prismic.API
 
-  require Logger
+  @page_size 100
 
+  @impl Prismic.API
   def fetch_repository(config) do
-    client = base_client(config)
-
-    case Tesla.get(client, "/api/v2") do
-      {:ok, %{body: body}} -> {:ok, body}
+    case Req.get(base_request(config), url: "/api/v2") do
+      {:ok, %Req.Response{status: 200, body: body}} -> {:ok, body}
+      {:ok, %Req.Response{status: status, body: body}} -> {:error, {:status, status, body}}
       {:error, error} -> {:error, error}
     end
   end
 
+  @impl Prismic.API
   def client(config, ref_id) do
-    client = base_client(config)
-    {:ok, %{body: body}} = Tesla.get(client, "/api/v2")
-    %{"refs" => refs} = body
-    ref = match_ref(refs, ref_id)
-    client = Tesla.client(Tesla.Client.middleware(client) ++ [{Tesla.Middleware.Query, ref: ref}])
-    {client, ref}
+    case fetch_repository(config) do
+      {:ok, %{"refs" => refs}} ->
+        ref = match_ref(refs, ref_id)
+        {Req.merge(base_request(config), params: [ref: ref]), ref}
+
+      {:error, error} ->
+        raise "Unable to fetch the Prismic repository: #{inspect(error)}"
+    end
   end
 
-  defp base_client(config) do
-    middleware = [
-      Tesla.Middleware.Logger,
-      {Tesla.Middleware.BaseUrl, Keyword.fetch!(config, :repository_url)},
-      {Tesla.Middleware.Query, access_token: Keyword.fetch!(config, :access_token)},
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.Retry,
-       [
-         should_retry: &should_retry?/1,
-         max_retries: 10,
-         delay: 100,
-         max_delay: 4_000
-       ]},
-      {Tesla.Middleware.Timeout, timeout: 10_000}
-    ]
-
-    Tesla.client(middleware)
-  end
-
+  @impl Prismic.API
   def list_by_type({client, _ref}, type) do
     search(client, "[[at(document.type,\"#{type}\")]]")
   end
 
+  @doc false
+  def retry_delay(retry_count), do: min(100 * Integer.pow(2, retry_count), 4_000)
+
+  defp base_request(config) do
+    [
+      base_url: Keyword.fetch!(config, :repository_url),
+      params: [access_token: Keyword.fetch!(config, :access_token)],
+      receive_timeout: 10_000,
+      retry: :safe_transient,
+      max_retries: 10,
+      retry_delay: &__MODULE__.retry_delay/1,
+      retry_log_level: :warning
+    ]
+    |> Req.new()
+    |> Req.merge(Keyword.get(config, :req_options, []))
+  end
+
   defp search(client, query, page \\ 1) do
-    {results, next_page} =
-      client
-      |> get_search(query, page)
-      |> parse_search_response!()
+    {results, next_page} = search_page!(client, query, page)
 
     if next_page do
-      results = [results | search(client, query, next_page)]
-
-      if page == 1 do
-        List.flatten(results)
-      else
-        results
-      end
+      results ++ search(client, query, next_page)
     else
       results
     end
   end
 
-  defp parse_search_response!(response) do
+  defp search_page!(client, query, page) do
+    response =
+      Req.get(client,
+        url: "/api/v2/documents/search",
+        params: [q: query, pageSize: @page_size, page: page]
+      )
+
     case response do
-      {:ok, %{body: %{"results" => results, "next_page" => next_page, "page" => page}}} ->
+      {:ok, %Req.Response{status: 200, body: %{"results" => results, "next_page" => next_page}}} ->
         {results, if(next_page, do: page + 1, else: nil)}
 
-      e ->
-        raise(e)
-    end
-  end
+      {:ok, %Req.Response{status: status, body: body}} ->
+        raise "Prismic search failed with status #{status}: #{inspect(body)}"
 
-  defp get_search(client, query, page) do
-    Tesla.get(client, "/api/v2/documents/search", query: [q: query, pageSize: 100, page: page])
+      {:error, %{__exception__: true} = error} ->
+        raise error
+
+      {:error, error} ->
+        raise "Prismic search failed: #{inspect(error)}"
+    end
   end
 
   defp match_ref(refs, "Master") do
@@ -98,12 +109,5 @@ defmodule Prismic.API.HTTP do
     end
 
     ref_record["ref"]
-  end
-
-  defp should_retry?({:ok, %{status: status}}) when status < 300, do: false
-
-  defp should_retry?(e) do
-    Logger.warning("Prismic API request requires retry, got: #{inspect(e)}")
-    true
   end
 end
